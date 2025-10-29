@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, send_from_directory
 from flask_cors import CORS
 import PyPDF2
 import pdfplumber
@@ -7,12 +7,9 @@ import os
 from datetime import datetime
 import hashlib
 import traceback
-from fastapi.staticfiles import StaticFiles
 
-
-app = Flask(__name__)
+app = Flask(__name__, static_folder="static", template_folder="templates")
 CORS(app)
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 # مجلد التحميل
 UPLOAD_FOLDER = 'uploads'
@@ -29,7 +26,6 @@ class PDFProcessor:
         self.entities = []
         
     def extract_basic_info(self):
-        """استخراج المعلومات الأساسية من PDF"""
         try:
             with open(self.file_path, 'rb') as file:
                 pdf_reader = PyPDF2.PdfReader(file)
@@ -48,18 +44,15 @@ class PDFProcessor:
                            'creation_date': 'غير محدد', 'file_size': 'غير معروف'}
     
     def extract_text_and_tables(self):
-        """استخراج النص والجداول باستخدام pdfplumber"""
         try:
             with pdfplumber.open(self.file_path) as pdf:
                 self.text_content = ""
                 self.tables = []
                 
                 for page_num, page in enumerate(pdf.pages):
-                    # استخراج النص
                     text = page.extract_text() or ""
                     self.text_content += f"\n--- الصفحة {page_num + 1} ---\n{text}\n"
                     
-                    # استخراج الجداول
                     page_tables = page.extract_tables() or []
                     for table_num, table in enumerate(page_tables):
                         if table:
@@ -70,17 +63,14 @@ class PDFProcessor:
                                 'rows': [[str(cell) if cell is not None else '' for cell in row] for row in table[1:]] if len(table) > 1 else []
                             }
                             self.tables.append(table_data)
-                            
         except Exception as e:
             print(f"❌ Error extracting text: {e}")
             self.text_content = "فشل في استخراج النص من الملف"
     
     def extract_entities(self):
-        """استخراج الكيانات المختلفة من النص"""
         if not self.text_content:
             return
             
-        # أنماط للتعرف على الكيانات
         patterns = {
             'أسماء': r'\b[أ-ي]{3,}\s[أ-ي]{3,}\b',
             'تواريخ': r'\b\d{1,2}/\d{1,2}/\d{2,4}\b|\b\d{4}-\d{2}-\d{2}\b',
@@ -99,11 +89,10 @@ class PDFProcessor:
                         'text': match.group(),
                         'confidence': min(95, 70 + len(match.group()) * 2)
                     })
-            except Exception as e:
+            except:
                 continue
     
     def analyze_semantic_content(self):
-        """تحليل المحتوى الدلالي"""
         if not self.text_content:
             return {
                 'documentType': 'غير معروف',
@@ -113,7 +102,6 @@ class PDFProcessor:
             }
         
         try:
-            # تحديد نوع المستند
             document_type = "عام"
             text_lower = self.text_content.lower()
             
@@ -124,13 +112,8 @@ class PDFProcessor:
             elif any(word in text_lower for word in ['تقرير', 'تحليل', 'نتيجة']):
                 document_type = "تقرير"
             
-            # استخراج المواضيع
             topics = self.extract_topics()
-            
-            # تحديد اللغة
             language = "عربية" if re.search(r'[أ-ي]', self.text_content) else "إنجليزية"
-            
-            # إنشاء ملخص
             sentences = [s.strip() for s in self.text_content.split('.') if s.strip()]
             summary = '. '.join(sentences[:3]) + '.' if len(sentences) > 3 else self.text_content[:200] + '...'
             
@@ -140,7 +123,7 @@ class PDFProcessor:
                 'language': language,
                 'summary': summary
             }
-        except Exception as e:
+        except:
             return {
                 'documentType': 'غير معروف',
                 'topics': [],
@@ -149,7 +132,6 @@ class PDFProcessor:
             }
     
     def extract_topics(self):
-        """استخراج المواضيع الرئيسية من النص"""
         try:
             common_arabic_words = {
                 'عمل', 'شركة', 'مشروع', 'دراسة', 'تحليل', 'تقرير', 'عقد', 'اتفاق',
@@ -169,7 +151,6 @@ class PDFProcessor:
             return []
     
     def process(self):
-        """معالجة الملف بالكامل"""
         try:
             print("🔄 Starting PDF processing...")
             
@@ -202,25 +183,23 @@ class PDFProcessor:
 def index():
     return render_template('index.html')
 
+@app.route('/<path:filename>')
+def serve_static(filename):
+    return send_from_directory(app.static_folder, filename)
+
 @app.route('/analyze', methods=['POST'])
 def analyze_pdf():
     try:
-        print("📨 Received analyze request...")
-        
         if 'pdf' not in request.files:
-            print("❌ No file in request")
             return jsonify({'success': False, 'error': 'لم يتم تقديم ملف'}), 400
         
         file = request.files['pdf']
-        print(f"📄 File: {file.filename}")
-        
         if file.filename == '':
             return jsonify({'success': False, 'error': 'لم يتم اختيار ملف'}), 400
         
         if not file.filename.lower().endswith('.pdf'):
             return jsonify({'success': False, 'error': 'الملف يجب أن يكون بصيغة PDF'}), 400
         
-        # حفظ الملف
         file_data = file.read()
         if len(file_data) == 0:
             return jsonify({'success': False, 'error': 'الملف فارغ'}), 400
@@ -228,35 +207,25 @@ def analyze_pdf():
         file_hash = hashlib.md5(file_data).hexdigest()
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{file_hash}.pdf")
         
-        # إعادة تعيين الملف وحفظه
         file.seek(0)
         file.save(file_path)
-        print(f"💾 File saved: {file_path}")
         
-        # معالجة الملف
         processor = PDFProcessor(file_path)
         result = processor.process()
         
-        # تنظيف
         try:
             os.remove(file_path)
         except:
             pass
         
-        print("📤 Sending response...")
         return jsonify(result)
         
     except Exception as e:
-        print(f"❌ Critical error: {e}")
         return jsonify({'success': False, 'error': f'فشل في معالجة الملف: {str(e)}'}), 500
 
 @app.route('/health')
 def health_check():
     return jsonify({'status': 'healthy', 'message': 'خادم PDF جاهز للعمل'})
-
-@app.route('/test')
-def test_route():
-    return jsonify({'message': 'Test successful', 'timestamp': datetime.now().isoformat()})
 
 if __name__ == '__main__':
     print("🚀 Starting PDF Analysis Server...")
