@@ -6,29 +6,21 @@
     <title>محلل PDF AI الذكي</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
         <!-- الرأس -->
         <header class="header">
-            <div class="header-content">
-                <div class="logo">
-                    <i class="fas fa-file-pdf"></i>
-                    <h1>محلل PDF </h1>
-                </div>
-                <p class="tagline">قم بتحميل ملف PDF لاستخراج النصوص، الجداول، والمعلومات المهمة باستخدام الذكاء الاصطناعي</p>
-            </div>
+            <h1><i class="fas fa-file-pdf"></i> محلل PDF الذكي</h1>
+            <p>قم بتحميل ملف PDF لاستخراج النصوص، الجداول، والمعلومات المهمة</p>
         </header>
 
         <!-- منطقة رفع الملف -->
         <div class="upload-section">
             <div class="upload-box" id="uploadBox">
-                <div class="upload-icon">
-                    <i class="fas fa-cloud-upload-alt"></i>
-                </div>
+                <i class="fas fa-cloud-upload-alt"></i>
                 <h3>اسحب وأفلت ملف PDF هنا</h3>
-                <p>أو <span class="browse-link" id="browseLink">اختر من جهازك</span></p>
+                <p>أو <span class="browse-link">اختر من جهازك</span></p>
                 <input type="file" id="pdfFile" accept=".pdf" hidden>
                 <div class="supported-info">
                     <i class="fas fa-info-circle"></i>
@@ -44,12 +36,6 @@
                 <div class="file-details">
                     <span class="file-name" id="fileName"></span>
                     <span class="file-size" id="fileSize"></span>
-                    <div class="file-progress">
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="uploadProgress"></div>
-                        </div>
-                        <span class="progress-text" id="progressText">0%</span>
-                    </div>
                 </div>
                 <button class="remove-btn" onclick="removeFile()">
                     <i class="fas fa-times"></i>
@@ -62,115 +48,21 @@
             <button class="analyze-btn" id="analyzeBtn" disabled onclick="analyzePDF()">
                 <i class="fas fa-magic"></i>
                 بدء التحليل
-                <span class="loading-dots" id="loadingDots" style="display: none;"></span>
             </button>
-            <div class="analysis-options">
-                <label class="option-checkbox">
-                    <input type="checkbox" id="extractTables" checked>
-                    <span class="checkmark"></span>
-                    استخراج الجداول
-                </label>
-                <label class="option-checkbox">
-                    <input type="checkbox" id="extractEntities" checked>
-                    <span class="checkmark"></span>
-                    استخراج الكيانات
-                </label>
-                <label class="option-checkbox">
-                    <input type="checkbox" id="summarizeText" checked>
-                    <span class="checkmark"></span>
-                    تلخيص النص
-                </label>
-            </div>
         </div>
 
         <!-- حالة التحميل -->
         <div class="loading-section" id="loadingSection" style="display: none;">
-            <div class="loading-content">
-                <div class="loading-spinner"></div>
-                <h3>جاري تحليل الملف...</h3>
-                <p id="loadingMessage">جاري معالجة المستند واستخراج المعلومات</p>
-                <div class="progress-container">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="analysisProgress"></div>
-                    </div>
-                    <span class="progress-text" id="analysisProgressText">0%</span>
-                </div>
-                <div class="loading-steps">
-                    <div class="step active" id="step1">
-                        <i class="fas fa-check"></i>
-                        <span>تحميل الملف</span>
-                    </div>
-                    <div class="step" id="step2">
-                        <i class="fas fa-spinner"></i>
-                        <span>استخراج النص</span>
-                    </div>
-                    <div class="step" id="step3">
-                        <i class="far fa-circle"></i>
-                        <span>تحليل المحتوى</span>
-                    </div>
-                    <div class="step" id="step4">
-                        <i class="far fa-circle"></i>
-                        <span>عرض النتائج</span>
-                    </div>
-                </div>
+            <div class="loading-spinner"></div>
+            <p>جاري تحليل الملف...</p>
+            <div class="progress-bar">
+                <div class="progress"></div>
             </div>
         </div>
 
         <!-- النتائج -->
         <div class="results-section" id="resultsSection" style="display: none;">
-            <div class="results-header">
-                <h2><i class="fas fa-chart-bar"></i> نتائج التحليل</h2>
-                <div class="results-actions">
-                    <button class="action-btn" onclick="exportResults()">
-                        <i class="fas fa-download"></i>
-                        تصدير النتائج
-                    </button>
-                    <button class="action-btn" onclick="printResults()">
-                        <i class="fas fa-print"></i>
-                        طباعة
-                    </button>
-                </div>
-            </div>
-            
-            <!-- ملخص النتائج -->
-            <div class="summary-cards">
-                <div class="summary-card">
-                    <div class="summary-icon pages">
-                        <i class="fas fa-file"></i>
-                    </div>
-                    <div class="summary-info">
-                        <span class="summary-value" id="pagesCount">0</span>
-                        <span class="summary-label">عدد الصفحات</span>
-                    </div>
-                </div>
-                <div class="summary-card">
-                    <div class="summary-icon words">
-                        <i class="fas fa-font"></i>
-                    </div>
-                    <div class="summary-info">
-                        <span class="summary-value" id="wordsCount">0</span>
-                        <span class="summary-label">عدد الكلمات</span>
-                    </div>
-                </div>
-                <div class="summary-card">
-                    <div class="summary-icon entities">
-                        <i class="fas fa-search"></i>
-                    </div>
-                    <div class="summary-info">
-                        <span class="summary-value" id="entitiesCount">0</span>
-                        <span class="summary-label">الكيانات المستخرجة</span>
-                    </div>
-                </div>
-                <div class="summary-card">
-                    <div class="summary-icon tables">
-                        <i class="fas fa-table"></i>
-                    </div>
-                    <div class="summary-info">
-                        <span class="summary-value" id="tablesCount">0</span>
-                        <span class="summary-label">الجداول المستخرجة</span>
-                    </div>
-                </div>
-            </div>
+            <h2><i class="fas fa-chart-bar"></i> نتائج التحليل</h2>
             
             <!-- المعلومات الأساسية -->
             <div class="result-card">
@@ -198,19 +90,7 @@
 
             <!-- النص الخام -->
             <div class="result-card">
-                <div class="text-header">
-                    <h3><i class="fas fa-align-left"></i> النص المستخرج</h3>
-                    <div class="text-actions">
-                        <button class="text-action-btn" onclick="copyText()">
-                            <i class="fas fa-copy"></i>
-                            نسخ النص
-                        </button>
-                        <button class="text-action-btn" onclick="toggleText()">
-                            <i class="fas fa-expand"></i>
-                            <span id="toggleTextLabel">عرض كامل</span>
-                        </button>
-                    </div>
-                </div>
+                <h3><i class="fas fa-align-left"></i> النص المستخرج</h3>
                 <div class="text-content" id="rawText"></div>
             </div>
         </div>
@@ -221,27 +101,11 @@
                 <i class="fas fa-exclamation-triangle"></i>
                 <h3>حدث خطأ</h3>
                 <p id="errorMessage"></p>
-                <div class="error-actions">
-                    <button class="retry-btn" onclick="retryAnalysis()">
-                        <i class="fas fa-redo"></i>
-                        حاول مرة أخرى
-                    </button>
-                    <button class="cancel-btn" onclick="hideError()">إلغاء</button>
-                </div>
+                <button class="retry-btn" onclick="hideError()">حاول مرة أخرى</button>
             </div>
         </div>
-
-        <!-- التذييل -->
-        <footer class="footer">
-            <p>تم التطوير باستخدام تقنيات الذكاء الاصطناعي المتقدمة</p>
-            <div class="footer-links">
-                <a href="#"><i class="fas fa-question-circle"></i> المساعدة</a>
-                <a href="#"><i class="fas fa-shield-alt"></i> الخصوصية</a>
-                <a href="#"><i class="fas fa-envelope"></i> اتصل بنا</a>
-            </div>
-        </footer>
     </div>
 
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
-</body>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+ <script src="{{ url_for('static', filename='script.js') }}"></script>
 </html>
