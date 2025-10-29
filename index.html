@@ -3,80 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام تحليل PDF الذكي</title>
-    <link rel="stylesheet" href="style.css">
+    <title>محلل PDF AI الذكي</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>🦉 نظام التحليل الذكي للملفات PDF</h1>
-            <p>قم برفع ملف PDF وسنقوم بتحليله وفهم محتواه بدقة عالية</p>
+        <!-- الرأس -->
+        <header class="header">
+            <h1><i class="fas fa-file-pdf"></i> محلل الذكي</h1>
+            <p>قم بتحميل ملف PDF لاستخراج النصوص، الجداول، والمعلومات المهمة</p>
         </header>
 
-        <div class="upload-container">
-            <div class="upload-area" id="uploadArea">
-                <div class="upload-icon">📄</div>
+        <!-- منطقة رفع الملف -->
+        <div class="upload-section">
+            <div class="upload-box" id="uploadBox">
+                <i class="fas fa-cloud-upload-alt"></i>
                 <h3>اسحب وأفلت ملف PDF هنا</h3>
-                <p>أو <span class="browse-text">اختر من جهازك</span></p>
-                <input type="file" id="fileInput" accept=".pdf" hidden>
-            </div>
-            
-            <div class="file-info" id="fileInfo" style="display: none;">
-                <div class="file-card">
-                    <span class="file-icon">📄</span>
-                    <div class="file-details">
-                        <span class="file-name" id="fileName"></span>
-                        <span class="file-size" id="fileSize"></span>
-                    </div>
-                    <button class="remove-btn" id="removeBtn">✕</button>
+                <p>أو <span class="browse-link">اختر من جهازك</span></p>
+                <input type="file" id="pdfFile" accept=".pdf" hidden>
+                <div class="supported-info">
+                    <i class="fas fa-info-circle"></i>
+                    يدعم: النصوص، الجداول، التواريخ، الأسماء، والمزيد
                 </div>
             </div>
+        </div>
 
-            <button class="analyze-btn" id="analyzeBtn" disabled>
-                <span class="btn-text">بدء التحليل</span>
-                <div class="loading-spinner" style="display: none;"></div>
+        <!-- معلومات التحميل -->
+        <div class="file-info" id="fileInfo" style="display: none;">
+            <div class="file-card">
+                <i class="fas fa-file-pdf"></i>
+                <div class="file-details">
+                    <span class="file-name" id="fileName"></span>
+                    <span class="file-size" id="fileSize"></span>
+                </div>
+                <button class="remove-btn" onclick="removeFile()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- زر التحليل -->
+        <div class="analyze-section">
+            <button class="analyze-btn" id="analyzeBtn" disabled onclick="analyzePDF()">
+                <i class="fas fa-magic"></i>
+                بدء التحليل
             </button>
         </div>
 
-        <div class="results-container" id="resultsContainer" style="display: none;">
-            <h2>📊 نتائج التحليل</h2>
+        <!-- حالة التحميل -->
+        <div class="loading-section" id="loadingSection" style="display: none;">
+            <div class="loading-spinner"></div>
+            <p>جاري تحليل الملف...</p>
+            <div class="progress-bar">
+                <div class="progress"></div>
+            </div>
+        </div>
+
+        <!-- النتائج -->
+        <div class="results-section" id="resultsSection" style="display: none;">
+            <h2><i class="fas fa-chart-bar"></i> نتائج التحليل</h2>
             
-            <div class="results-grid">
-                <div class="result-card">
-                    <h3>📝 المعلومات الأساسية</h3>
-                    <div id="basicInfo" class="result-content"></div>
-                </div>
-                
-                <div class="result-card">
-                    <h3>👥 الكيانات المستخرجة</h3>
-                    <div id="entities" class="result-content"></div>
-                </div>
-                
-                <div class="result-card">
-                    <h3>📊 الجداول والمحتوى المنظم</h3>
-                    <div id="tables" class="result-content"></div>
-                </div>
-                
-                <div class="result-card">
-                    <h3>🔍 التحليل الدلالي</h3>
-                    <div id="semanticAnalysis" class="result-content"></div>
-                </div>
+            <!-- المعلومات الأساسية -->
+            <div class="result-card">
+                <h3><i class="fas fa-info-circle"></i> المعلومات الأساسية</h3>
+                <div class="info-grid" id="basicInfo"></div>
             </div>
 
-            <div class="raw-content">
-                <h3>📄 النص الخام المستخرج</h3>
+            <!-- التحليل الدلالي -->
+            <div class="result-card">
+                <h3><i class="fas fa-brain"></i> التحليل الدلالي</h3>
+                <div class="semantic-content" id="semanticAnalysis"></div>
+            </div>
+
+            <!-- الكيانات المستخرجة -->
+            <div class="result-card">
+                <h3><i class="fas fa-search"></i> الكيانات المستخرجة</h3>
+                <div class="entities-grid" id="entitiesList"></div>
+            </div>
+
+            <!-- الجداول -->
+            <div class="result-card">
+                <h3><i class="fas fa-table"></i> الجداول المستخرجة</h3>
+                <div class="tables-container" id="tablesList"></div>
+            </div>
+
+            <!-- النص الخام -->
+            <div class="result-card">
+                <h3><i class="fas fa-align-left"></i> النص المستخرج</h3>
                 <div class="text-content" id="rawText"></div>
             </div>
         </div>
 
-        <div class="progress-container" id="progressContainer" style="display: none;">
-            <div class="progress-bar">
-                <div class="progress-fill" id="progressFill"></div>
+        <!-- رسائل الخطأ -->
+        <div class="error-section" id="errorSection" style="display: none;">
+            <div class="error-card">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>حدث خطأ</h3>
+                <p id="errorMessage"></p>
+                <button class="retry-btn" onclick="hideError()">حاول مرة أخرى</button>
             </div>
-            <p class="progress-text" id="progressText">جاري معالجة الملف...</p>
         </div>
     </div>
 
-    <script src="script.js"></script>
-</body>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+ <script src="{{ url_for('static', filename='script.js') }}"></script>
 </html>
