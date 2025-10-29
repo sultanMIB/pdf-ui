@@ -7,9 +7,12 @@ import os
 from datetime import datetime
 import hashlib
 import traceback
+from fastapi.staticfiles import StaticFiles
+
 
 app = Flask(__name__)
 CORS(app)
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
 # مجلد التحميل
 UPLOAD_FOLDER = 'uploads'
